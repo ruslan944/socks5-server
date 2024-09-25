@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"net"
 	"os"
 
 	"github.com/armon/go-socks5"
@@ -46,7 +47,12 @@ func main() {
 	}
 
 	log.Printf("Start listening proxy service on port %s\n", cfg.Port)
-	if err := server.ListenAndServe("tcp", ":"+cfg.Port); err != nil {
+	l, err := net.Listen("tcp", ":"+cfg.Port)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err := server.Serve(l); err != nil {
 		log.Fatal(err)
 	}
 }
