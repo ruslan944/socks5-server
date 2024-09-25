@@ -11,10 +11,11 @@ import (
 )
 
 type params struct {
-	User            string `env:"PROXY_USER" envDefault:""`
-	Password        string `env:"PROXY_PASSWORD" envDefault:""`
-	Port            string `env:"PROXY_PORT" envDefault:"1080"`
-	AllowedDestFqdn string `env:"ALLOWED_DEST_FQDN" envDefault:""`
+	User              string        `env:"PROXY_USER" envDefault:""`
+	Password          string        `env:"PROXY_PASSWORD" envDefault:""`
+	Port              string        `env:"PROXY_PORT" envDefault:"1080"`
+	AllowedDestFqdn   string        `env:"ALLOWED_DEST_FQDN" envDefault:""`
+	ConnectionTimeout time.Duration `env:"CONNECTION_TIMEOUT"`
 }
 
 // ListenerWithTimeout wraps a net.Listener and sets a deadline for each connection.
@@ -81,6 +82,12 @@ func main() {
 	l, err := net.Listen("tcp", ":"+cfg.Port)
 	if err != nil {
 		log.Fatal(err)
+	}
+	if cfg.ConnectionTimeout > 0 {
+		l = &ListenerWithTimeout{
+			Listener: l,
+			timeout:  cfg.ConnectionTimeout,
+		}
 	}
 
 	if err := server.Serve(l); err != nil {
