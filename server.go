@@ -4,6 +4,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"time"
 
 	"github.com/armon/go-socks5"
 	"github.com/caarlos0/env/v6"
@@ -14,6 +15,36 @@ type params struct {
 	Password        string `env:"PROXY_PASSWORD" envDefault:""`
 	Port            string `env:"PROXY_PORT" envDefault:"1080"`
 	AllowedDestFqdn string `env:"ALLOWED_DEST_FQDN" envDefault:""`
+}
+
+// ListenerWithTimeout wraps a net.Listener and sets a deadline for each connection.
+type ListenerWithTimeout struct {
+	net.Listener
+	timeout time.Duration
+}
+
+// Accept waits for and returns the next connection to the listener.
+func (l *ListenerWithTimeout) Accept() (net.Conn, error) {
+	conn, err := l.Listener.Accept()
+	if err != nil {
+		return conn, err
+	}
+	// Set the deadline for the connection
+	err = conn.SetDeadline(time.Now().Add(l.timeout))
+	if err != nil {
+		return conn, err
+	}
+	return conn, nil
+}
+
+// Close closes the listener.
+func (l *ListenerWithTimeout) Close() error {
+	return l.Listener.Close()
+}
+
+// Addr returns the listener's network address.
+func (l *ListenerWithTimeout) Addr() net.Addr {
+	return l.Listener.Addr()
 }
 
 func main() {
